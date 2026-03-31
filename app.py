@@ -6,7 +6,9 @@ from perceptionmetrics.utils.gui import browse_folder
 
 
 def browse_dataset_path():
-    st.session_state.dataset_path = browse_folder()
+    folder = browse_folder()
+    if folder:
+        st.session_state.dataset_path = folder
 
 
 st.set_page_config(page_title="PerceptionMetrics", layout="wide")
@@ -57,7 +59,7 @@ with st.sidebar:
             st.markdown(
                 "<div style='margin-bottom: 1.75rem;'></div>", unsafe_allow_html=True
             )
-            st.button("Browse", on_click=browse_dataset_path)
+            st.button("Browse", on_click=browse_dataset_path, key="browse_dataset_path")
 
         # Additional input for YOLO config file
         if st.session_state.get("dataset_type", "COCO") == "YOLO":
@@ -281,6 +283,13 @@ with st.sidebar:
                     batch_size = int(st.session_state.get("batch_size", 1))
                     evaluation_step = int(st.session_state.get("evaluation_step", 5))
                     model_format = st.session_state.get("model_format", "torchvision")
+                    
+                    # Auto-detect YOLO models by filename
+                    if model_file and ("yolo" in model_file.name.lower() or "best." in model_file.name.lower()):
+                        detected_format = "yolo"
+                        if model_format != detected_format:
+                            st.info(f"Auto-detected model format: {detected_format} (based on filename '{model_file.name}')")
+                            model_format = detected_format
 
                     # Resize Logic extraction
                     enable_resize = st.session_state.get("enable_resize", True)

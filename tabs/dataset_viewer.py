@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import yaml
 from streamlit_image_select import image_select
 
 from perceptionmetrics.datasets.coco import find_img_dir_and_ann_file
@@ -39,12 +40,29 @@ def dataset_viewer_tab():
 
     elif dataset_type == "yolo":
         dataset_config_file = st.session_state.get("dataset_config_file", None)
-        img_dir = os.path.join(dataset_path, f"images/{split}")
-        if not os.path.isdir(img_dir):
-            st.warning("Image directory not found.")
-            return
         if dataset_config_file is None:
             st.warning("Dataset configuration file not found. Please upload it.")
+            return
+
+        try:
+            dataset_info = yaml.safe_load(dataset_config_file.getvalue()) or {}
+            split_path = dataset_info.get(split)
+            if not split_path:
+                st.warning(
+                    f"Split '{split}' is not defined in the uploaded YAML file."
+                )
+                return
+            img_dir = os.path.join(dataset_path, split_path)
+        except Exception:
+            st.warning("Failed to parse dataset YAML configuration file.")
+            return
+
+        if not os.path.isdir(img_dir):
+            st.warning(
+                "Image directory not found. "
+                f"Expected: {img_dir}. "
+                "Set Dataset Folder to the dataset root that contains the split paths defined in the YAML."
+            )
             return
     else:
         st.error("Unsupported dataset type.")
@@ -96,7 +114,7 @@ def dataset_viewer_tab():
                     with tempfile.NamedTemporaryFile(
                         delete=False, suffix=".yaml"
                     ) as tmp:
-                        tmp.write(dataset_config_file.read())
+                        tmp.write(dataset_config_file.getvalue())
                         tmp_path = tmp.name
 
                     # Load YOLO dataset

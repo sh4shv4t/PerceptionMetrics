@@ -144,4 +144,17 @@ def inference_tab():
                 else:
                     st.info("No detections found in the image.")
             except Exception as e:
-                st.error(f"Failed to run inference: {e}")
+                # Improve error diagnostics for tensor dimension mismatches
+                error_msg = str(e)
+                if "too many indices" in error_msg or "dimension" in error_msg:
+                    st.error(
+                        f"Model inference failed due to tensor dimension mismatch: {e}\n\n"
+                        f"**Possible causes:**\n"
+                        f"- Incorrect Model Format: Ensure 'Model Format' matches your model type (use 'YOLO' for best.torchscript)\n"
+                        f"- Model output shape doesn't match configuration expectations\n\n"
+                        f"**Solution:**\n"
+                        f"1. If using best.torchscript, select 'YOLO' as Model Format in the sidebar\n"
+                        f"2. Ensure image resize dimensions match model training (typically 640x640 for YOLO)"
+                    )
+                else:
+                    st.error(f"Failed to run inference: {e}")
